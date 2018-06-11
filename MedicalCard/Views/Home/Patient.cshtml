@@ -1,0 +1,38 @@
+﻿@{
+    ViewData["Title"] = "Pacjenci";
+}
+<table  class="table table-hover">
+    <tr>
+        <th>Nazwisko pacjenta</th>
+        <th>Imię pacjenta</th>
+        <th>Dane kontaktowe</th>
+    </tr>
+    @foreach (var item in (IEnumerable<Hl7.Fhir.Model.Patient>)ViewBag.Patients)
+    {
+        <tr class="clickable-row" data-href="\Home\EditPatient\@(item.Id)">
+            <td>@(item.Name.FirstOrDefault()?.Family ?? "brak danych")</td>
+            <td>@(item.Name.FirstOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
+            <td>@foreach(var contact in item.Telecom)
+            {
+                @($"{contact.System}: {contact.Value}")<br/>;
+            }
+            </td>
+        </tr>
+    }
+</table>
+
+<script>
+    jQuery(document).ready(function ($) {
+        $(".clickable-row").click(function () {
+            window.location = $(this).data("href")
+        });
+    });
+</script>
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.12.1/bootstrap-table.min.css">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.12.1/bootstrap-table.min.js"></script>
+
+<!-- Latest compiled and minified Locales -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.12.1/locale/bootstrap-table-zh-CN.min.js"></script>
