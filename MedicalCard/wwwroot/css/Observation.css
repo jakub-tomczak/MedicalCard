@@ -1,0 +1,20 @@
+﻿.observation-code {
+    color: gray;
+    font-size: small;
+}
+
+.observationType-component {
+    background-color: antiquewhite;
+}
+
+.observationType-concept {
+    background-color: darkcyan;
+}
+
+.observationType-other {
+    background-color: khaki;
+}
+
+.observationType-simple-quantity {
+    background-color: aquamarine;
+}

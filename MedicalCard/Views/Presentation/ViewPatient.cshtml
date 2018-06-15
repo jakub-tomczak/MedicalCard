@@ -1,28 +1,17 @@
 ﻿@model MedicalCard.ViewModels.PatientSummary;
 @using Hl7.Fhir.Model;
 @{
-    var timelineData = new List<string>();
     ViewData["Title"] = "ViewPatient";
+    var timelineIterator = 0;
 }
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
-<script src="~/lib/timeline/src/jquery.timeline.js"></script>
+<link rel="stylesheet" type="text/css" href="~/css/timeline.css">
+<link rel="stylesheet" type="text/css" href="~/css/Observation.css">
+<link rel="stylesheet" type="text/css" href="~/css/TabView.css">
+<link rel="stylesheet" type="text/css" href="~/css/Chart.css">
+<script src="~/js/TabView.js"></script>
 <script src="~/lib/chartjs/utils.js"></script>
 <script src="~/lib/chartjs/Chart.bundle.min.js"></script>
 
-<style>
-    canvas {
-        -moz-user-select: none;
-        -webkit-user-select: none;
-        -ms-user-select: none;
-    }
-
-    .timeline-object {
-        background-color: darkgrey;
-    }
-</style>
-
-<div id="element"></div>
 
 @if (Model?.Data == null)
 {
@@ -60,25 +49,26 @@ else
 
     @foreach (var observation in Model.Observations)
     {
-        <div class="timeline-object">
+        <div class="timeline">
             @if (observation.Value is SimpleQuantity simpleQuantity)
             {
-                //
-                timelineData.Add($"{observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu"}<br/>{observation.Code.Text}<br/>{simpleQuantity.Value}");
-
-                @*<p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                <p class="observation observation-question">@(observation.Code.Text)</p>
-                <p class="observation observation-value">@(simpleQuantity.Value)</p>*@
-
+                <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
+                    <div class="content observationType-simple-quantity">
+                        <h2 class="observation observation-question">@(observation.Code.Text)</h2>
+                        <p class="observation observation-value">@(simpleQuantity.Value.Value.ToString("F2") )</p>
+                        <p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                    </div>
+                </div>
             }
             else if (observation.Value is CodeableConcept concept)
             {
-                timelineData.Add($"{observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu"}<br/>{observation.Code.Text}<br/>{concept.Text}");
 
                 //death or sth
-                @*<p class="observation observation-code">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                    <p class="observation observation-question">Pytanie:@(observation.Code.Text)</p>
-                    <p class="observation observation-value">@(concept.Text)</p>*@
+                <div class="observationType-concept">
+                    <p class="observation observation-code ">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                    <p class="observation observation-question ">Pytanie:@(observation.Code.Text)</p>
+                    <p class="observation observation-value ">@(concept.Text)</p>
+                </div>
             }
             else
             {
@@ -87,19 +77,22 @@ else
                     //blood pressure
                     @foreach (var item in observation.Component)
                     {
-                        <p class="observation observation-code">@(item.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                        <p class="observation observation-question">@(item.Code.Text)</p>
-                        <p class="observation observation-value">@(item.Value)</p>
+                        <div class="observationType-component">
+                            <p class="observation observation-code ">@(item.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                            <p class="observation observation-question">@(item.Code.Text)</p>
+                            <p class="observation observation-value">@(item.Value)</p>
+                        </div>
                     }
                 }
                 else
                 {
                     //questions
-                    timelineData.Add($"{observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu"}<br/>{observation.Code.Text}<br/>{observation.Value}");
 
-                    @*<p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                    <p class="observation observation-question">Pytanie @(observation.Code.Text)</p>
-                    <p class="observation observation-value">Odpowiedź @(observation.Value)</p>*@
+                    <div class="observationType-other">
+                        <p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                        <p class="observation observation-question">Pytanie @(observation.Code.Text)</p>
+                        <p class="observation observation-value">Odpowiedź @(observation.Value)</p>
+                    </div>
                 }
             }
         </div>
@@ -108,148 +101,30 @@ else
 
     @Html.ActionLink("Edytuj", "EditPatient", "Edit", new { id = Model.Data.Id }, new Dictionary<string, object> { { "class", "btn btn-success" } })
 
-    <div style="width:75%;">
-        <canvas id="canvas"></canvas>
-    </div>
-    <br>
-    <br>
-    <button id="randomizeData">Randomize Data</button>
-    <button id="addDataset">Add Dataset</button>
-    <button id="removeDataset">Remove Dataset</button>
-    <button id="addData">Add Data</button>
-    <button id="removeData">Remove Data</button>
-    <script>
-        var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        var config = {
-            type: 'line',
-            data: {
-                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-                datasets: [{
-                    label: 'My First dataset',
-                    backgroundColor: window.chartColors.red,
-                    borderColor: window.chartColors.red,
-                    data: [
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor()
-                    ],
-                    fill: false,
-                }, {
-                    label: 'My Second dataset',
-                    fill: false,
-                    backgroundColor: window.chartColors.blue,
-                    borderColor: window.chartColors.blue,
-                    data: [
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor(),
-                        randomScalingFactor()
-                    ],
-                }]
-            },
-            options: {
-                responsive: true,
-                title: {
-                    display: true,
-                    text: 'Chart.js Line Chart'
-                },
-                tooltips: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                hover: {
-                    mode: 'nearest',
-                    intersect: true
-                },
-                scales: {
-                    xAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Month'
-                        }
-                    }],
-                    yAxes: [{
-                        display: true,
-                        scaleLabel: {
-                            display: true,
-                            labelString: 'Value'
-                        }
-                    }]
-                }
-            }
-        };
-        window.onload = function () {
-            var ctx = document.getElementById('canvas').getContext('2d');
-            window.myLine = new Chart(ctx, config);
-        };
-        document.getElementById('randomizeData').addEventListener('click', function () {
-            config.data.datasets.forEach(function (dataset) {
-                dataset.data = dataset.data.map(function () {
-                    return randomScalingFactor();
-                });
-            });
-            window.myLine.update();
-        });
-        var colorNames = Object.keys(window.chartColors);
-        document.getElementById('addDataset').addEventListener('click', function () {
-            var colorName = colorNames[config.data.datasets.length % colorNames.length];
-            var newColor = window.chartColors[colorName];
-            var newDataset = {
-                label: 'Dataset ' + config.data.datasets.length,
-                backgroundColor: newColor,
-                borderColor: newColor,
-                data: [],
-                fill: false
-            };
-            for (var index = 0; index < config.data.labels.length; ++index) {
-                newDataset.data.push(randomScalingFactor());
-            }
-            config.data.datasets.push(newDataset);
-            window.myLine.update();
-        });
-        document.getElementById('addData').addEventListener('click', function () {
-            if (config.data.datasets.length > 0) {
-                var month = MONTHS[config.data.labels.length % MONTHS.length];
-                config.data.labels.push(month);
-                config.data.datasets.forEach(function (dataset) {
-                    dataset.data.push(randomScalingFactor());
-                });
-                window.myLine.update();
-            }
-        });
-        document.getElementById('removeDataset').addEventListener('click', function () {
-            config.data.datasets.splice(0, 1);
-            window.myLine.update();
-        });
-        document.getElementById('removeData').addEventListener('click', function () {
-            config.data.labels.splice(-1, 1); // remove the label first
-            config.data.datasets.forEach(function (dataset) {
-                dataset.data.pop();
-            });
-            window.myLine.update();
-        });
-    </script>
+    //charts
+        <div class="tab-view">
+            <div class="tab-header">
+                <button class="tab-item btn" onclick="openTab('Tab1')">London</button>
+                <button class="tab-item btn" onclick="openTab('Tab2')">Paris</button>
+                <button class="tab-item btn" onclick="openTab('Tab3')">Tokyo</button>
+            </div>
+            <div id="Tab1" class="tab">
+                <div style="width:75%;">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
 
+            <div id="Tab2" class="tab" style="display:none">
+                <h2>Paris</h2>
+                <p>Paris is the capital of France.</p>
+            </div>
+
+            <div id="Tab3" class="tab" style="display:none">
+                <h2>Tokyo</h2>
+                <p>Tokyo is the capital of Japan.</p>
+            </div>
+        </div>
 }
 
-<script>
-    var timeline_data = [];
-        @foreach (var item in timelineData)
-        {
-            @:timeline_data.push({ time: new Date(), color: '#555', css: 'success', content: '@item' });
-        }
-
-    $("#element").timeline({
-        data: timeline_data
-    })
-</script>
 @Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
 
