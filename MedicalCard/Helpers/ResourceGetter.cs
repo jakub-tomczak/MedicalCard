@@ -11,71 +11,61 @@ namespace MedicalCard.Helpers
     {
         public ResourceGetter()
         {
-            client = new FhirClient(serviceRootUrl);
+            client = new FhirClient(ServiceRootUrl);
         }
 
         public IEnumerable<T> GetItems<T>(int limit = 10) where T : Resource, new()
         {
             var res = client.Search<T>(pageSize: limit);
-            return res.Entry.Where(x => x.Resource is T).Select(x => x.Resource).Cast<T>();
+            return res.Entry.Select(x => x.Resource).Cast<T>();
         }
 
-        public void UpdateItem<T>(T item) where T : Resource, new()
+        public bool UpdateItem<T>(T item) where T : Resource, new()
         {
-            client.Update<T>(item);
+            return client.Update<T>(item) != null;
         }
-        public T GetItem<T>(ResourceType type, string id) where T : Resource, new()
+
+        public List<T> SearchItemsWithParameters<T>(List<Tuple<String, String>> searchParameters, int entriesLimit = SearchLimit) where T : Resource, new()
         {
-            var res = client.Read<T>($"{Converter.ResourceToString(type)}/{id}");
-            return res;
+            var parameters = new SearchParams();
+            foreach (var item in searchParameters)
+            {
+                parameters.Add(item.Item1, item.Item2);
+            }
+
+            var result = client.Search<T>(parameters);
+            int counter = 0;
+            var outList = new List<T>();
+            while (result != null && counter < entriesLimit)
+            {
+                outList.AddRange(result.Entry?.Select(x => x.Resource).Cast<T>());
+                counter = outList.Count;
+                result = client.Continue(result);
+            }
+            if (counter <= entriesLimit)
+            {
+                return outList;
+            }
+            //fetched too many items
+            return outList.Take(entriesLimit).ToList();
         }
+
+        public T GetItem<T>(string id) where T : Resource, new()
+        {
+            try
+            {
+                var resource = client.SearchById<T>(id);
+
+                return resource.Entry?.FirstOrDefault()?.Resource as T;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private FhirClient client;
-        //public Bundle FetchData()
-        //{
-        //    var FhirClient = new FhirClient(serviceRootUrl);
-        //    try
-        //    {
-        //        //Attempt to send the resource to the server endpoint                
-        //        UriBuilder UriBuilderx = new UriBuilder
-        //        {
-        //            Path = Converter.ResourceToString[Type]
-        //        };
-        //        Resource ReturnedResource = FhirClient.InstanceOperation(UriBuilderx.Uri, "everything");
-
-        //        if (ReturnedResource is Bundle ReturnedBundle)
-        //        {
-        //            return ReturnedBundle;
-        //            //Console.WriteLine("Received: " + ReturnedBundle.Total + " results, the resources are: ");
-        //            //foreach (var Entry in ReturnedBundle.Entry)
-        //            //{
-        //            //    Console.WriteLine(string.Format("{0}/{1}", Entry.Resource.TypeName, Entry.Resource.Id));
-        //            //}
-        //        }
-        //        else
-        //        {
-        //            throw new FhirOperationException("Operation call must return a bundle resource", System.Net.HttpStatusCode.BadRequest);
-        //        }
-        //    }
-        //    catch (Hl7.Fhir.Rest.FhirOperationException FhirOpExec)
-        //    {
-        //        throw;
-        //        //Process any Fhir Errors returned as OperationOutcome resource
-        //        Console.WriteLine();
-        //        Console.WriteLine("An error message: " + FhirOpExec.Message);
-        //        Console.WriteLine();
-        //        string xml = Hl7.Fhir.Serialization.FhirSerializer.SerializeResourceToXml(FhirOpExec.Outcome);
-        //        //XDocument xDoc = XDocument.Parse(xml);
-        //        //Console.WriteLine(xDoc.ToString());
-        //    }
-        //    catch (Exception GeneralException)
-        //    {
-        //        throw new FhirOperationException(GeneralException.Message, System.Net.HttpStatusCode.BadRequest);
-        //        Console.WriteLine();
-        //        Console.WriteLine("An error message: " + GeneralException.Message);
-        //        Console.WriteLine();
-        //    }
-        //}
-
-        private static string serviceRootUrl = "http://localhost:8080/baseDstu3";
+        private const string ServiceRootUrl = "http://localhost:8080/baseDstu3";
+        private const int SearchLimit = 300;
     }
 }

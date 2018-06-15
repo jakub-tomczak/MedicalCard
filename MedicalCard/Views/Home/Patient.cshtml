@@ -9,7 +9,7 @@
     </tr>
     @foreach (var item in (IEnumerable<Hl7.Fhir.Model.Patient>)ViewBag.Patients)
     {
-        <tr class="clickable-row" data-href="\Home\EditPatient\@(item.Id)">
+        <tr class="clickable-row" data-href="\Presentation\ViewPatient\@(item.Id)">
             <td>@(item.Name.FirstOrDefault()?.Family ?? "brak danych")</td>
             <td>@(item.Name.FirstOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
             <td>@foreach(var contact in item.Telecom)

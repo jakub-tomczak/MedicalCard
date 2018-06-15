@@ -16,11 +16,10 @@ namespace MedicalCard.Controllers
     {
         public IActionResult Patient()
         {
-
             var resource = new ResourceGetter();
             var r = resource.GetItems<Patient>(20);
 
-            var pat = r.FirstOrDefault();
+            //var pat = r.FirstOrDefault();
 
             //pat.Name.Add(HumanName.ForFamily("Abrakadabra"));
 
@@ -41,20 +40,6 @@ namespace MedicalCard.Controllers
             ViewData["Message"] = "Your contact page.";
 
             return View();
-        }
-
-        public IActionResult EditPatient(string id)
-        {
-            var res = new ResourceGetter();
-            var patient = res.GetItem<Patient>(ResourceType.Patient, id);
-            ViewData["Patient"] = patient;
-            return View(patient);
-        }
-        [HttpPost]
-        public IActionResult EditPatient(Patient patient)
-        {
-            ViewBag["editStatus"] = "OK";
-            return RedirectToAction("Patient");
         }
 
         public IActionResult Error()

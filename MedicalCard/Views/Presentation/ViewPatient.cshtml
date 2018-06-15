@@ -1,0 +1,236 @@
+﻿@model MedicalCard.ViewModels.PatientSummary;
+@using Hl7.Fhir.Model;
+@{
+    ViewData["Title"] = "ViewPatient";
+}
+<script src="~/lib/timeline/src/jquery.timeline.js"></script>
+<script src="~/lib/chartjs/utils.js"></script>
+<script src="~/lib/chartjs/Chart.bundle.min.js"></script>
+
+<style>
+    canvas {
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+    }
+
+    .timeline-object {
+        background-color: darkgrey;
+    }
+</style>
+
+<div id="element"></div>
+
+@if (Model?.Data == null)
+{
+    <h2>Brak danych o pacjencie</h2>
+}
+else
+{
+    <h2>Metryka pacjenta @(Model.Data.Name.FirstOrDefault()?.Family ?? "")</h2>
+    <table>
+        <tr>
+            <td class="navbar-header">Nazwisko</td>
+            <td>@(Model.Data.Name.FirstOrDefault()?.Family ?? "brak danych")</td>
+        </tr>
+        <tr>
+            <td>Imię/imiona</td>
+            <td>@(Model.Data.Name.FirstOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
+        </tr>
+        <tr>
+            <td>Data urodzenia</td>
+            <td>@(Model.Data.BirthDate)</td>
+        </tr>
+        <tr>
+            <td>
+                Dane kontaktowe
+            </td>
+            <td>
+                @foreach (var contact in Model.Data.Telecom)
+                {
+                    @($"{contact.System}: {contact.Value}")<br />;
+                }
+            </td>
+        </tr>
+        <tr></tr>
+    </table>
+
+
+    @foreach (var observation in Model.Observations)
+    {
+        <div class="timeline-object">
+            @if (observation.Value is SimpleQuantity simpleQuantity)
+            {
+                //
+                <p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                <p class="observation observation-question">@(observation.Code.Text)</p>
+                <p class="observation observation-value">@(simpleQuantity.Value)</p>
+
+            }
+            else if (observation.Value is CodeableConcept concept)
+            {
+
+                //death or sth
+                <p class="observation observation-code">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                <p class="observation observation-question">Pytanie:@(observation.Code.Text)</p>
+                <p class="observation observation-value">@(concept.Text)</p>
+            }
+            else
+            {
+                @if (observation.Component.Count > 0)
+                {
+                    //blood pressure
+                    @foreach (var item in observation.Component)
+                    {
+                        <p class="observation observation-code">@(item.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                        <p class="observation observation-question">@(item.Code.Text)</p>
+                        <p class="observation observation-value">@(item.Value)</p>
+                    }
+                }
+                else
+                {
+                    //questions
+                    <p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                    <p class="observation observation-question">Pytanie @(observation.Code.Text)</p>
+                    <p class="observation observation-value">Odpowiedź @(observation.Value)</p>
+                }
+            }
+        </div>
+
+    }
+
+    @Html.ActionLink("Edytuj", "EditPatient", "Edit", new { id = Model.Data.Id }, new Dictionary<string, object> { { "class", "btn btn-success" } })
+
+    <div style="width:75%;">
+        <canvas id="canvas"></canvas>
+    </div>
+    <br>
+    <br>
+    <button id="randomizeData">Randomize Data</button>
+    <button id="addDataset">Add Dataset</button>
+    <button id="removeDataset">Remove Dataset</button>
+    <button id="addData">Add Data</button>
+    <button id="removeData">Remove Data</button>
+    <script>
+        var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        var config = {
+            type: 'line',
+            data: {
+                labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+                datasets: [{
+                    label: 'My First dataset',
+                    backgroundColor: window.chartColors.red,
+                    borderColor: window.chartColors.red,
+                    data: [
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor()
+                    ],
+                    fill: false,
+                }, {
+                    label: 'My Second dataset',
+                    fill: false,
+                    backgroundColor: window.chartColors.blue,
+                    borderColor: window.chartColors.blue,
+                    data: [
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor(),
+                        randomScalingFactor()
+                    ],
+                }]
+            },
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Chart.js Line Chart'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Month'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Value'
+                        }
+                    }]
+                }
+            }
+        };
+        window.onload = function () {
+            var ctx = document.getElementById('canvas').getContext('2d');
+            window.myLine = new Chart(ctx, config);
+        };
+        document.getElementById('randomizeData').addEventListener('click', function () {
+            config.data.datasets.forEach(function (dataset) {
+                dataset.data = dataset.data.map(function () {
+                    return randomScalingFactor();
+                });
+            });
+            window.myLine.update();
+        });
+        var colorNames = Object.keys(window.chartColors);
+        document.getElementById('addDataset').addEventListener('click', function () {
+            var colorName = colorNames[config.data.datasets.length % colorNames.length];
+            var newColor = window.chartColors[colorName];
+            var newDataset = {
+                label: 'Dataset ' + config.data.datasets.length,
+                backgroundColor: newColor,
+                borderColor: newColor,
+                data: [],
+                fill: false
+            };
+            for (var index = 0; index < config.data.labels.length; ++index) {
+                newDataset.data.push(randomScalingFactor());
+            }
+            config.data.datasets.push(newDataset);
+            window.myLine.update();
+        });
+        document.getElementById('addData').addEventListener('click', function () {
+            if (config.data.datasets.length > 0) {
+                var month = MONTHS[config.data.labels.length % MONTHS.length];
+                config.data.labels.push(month);
+                config.data.datasets.forEach(function (dataset) {
+                    dataset.data.push(randomScalingFactor());
+                });
+                window.myLine.update();
+            }
+        });
+        document.getElementById('removeDataset').addEventListener('click', function () {
+            config.data.datasets.splice(0, 1);
+            window.myLine.update();
+        });
+        document.getElementById('removeData').addEventListener('click', function () {
+            config.data.labels.splice(-1, 1); // remove the label first
+            config.data.datasets.forEach(function (dataset) {
+                dataset.data.pop();
+            });
+            window.myLine.update();
+        });
+    </script>
+
+}
+@Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
+
