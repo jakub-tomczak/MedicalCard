@@ -1,8 +1,11 @@
 ﻿@model MedicalCard.ViewModels.PatientSummary;
 @using Hl7.Fhir.Model;
 @{
+    var timelineData = new List<string>();
     ViewData["Title"] = "ViewPatient";
 }
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
 <script src="~/lib/timeline/src/jquery.timeline.js"></script>
 <script src="~/lib/chartjs/utils.js"></script>
 <script src="~/lib/chartjs/Chart.bundle.min.js"></script>
@@ -55,25 +58,27 @@ else
         <tr></tr>
     </table>
 
-
     @foreach (var observation in Model.Observations)
     {
         <div class="timeline-object">
             @if (observation.Value is SimpleQuantity simpleQuantity)
             {
                 //
-                <p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                timelineData.Add($"{observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu"}<br/>{observation.Code.Text}<br/>{simpleQuantity.Value}");
+
+                @*<p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
                 <p class="observation observation-question">@(observation.Code.Text)</p>
-                <p class="observation observation-value">@(simpleQuantity.Value)</p>
+                <p class="observation observation-value">@(simpleQuantity.Value)</p>*@
 
             }
             else if (observation.Value is CodeableConcept concept)
             {
+                timelineData.Add($"{observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu"}<br/>{observation.Code.Text}<br/>{concept.Text}");
 
                 //death or sth
-                <p class="observation observation-code">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                <p class="observation observation-question">Pytanie:@(observation.Code.Text)</p>
-                <p class="observation observation-value">@(concept.Text)</p>
+                @*<p class="observation observation-code">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                    <p class="observation observation-question">Pytanie:@(observation.Code.Text)</p>
+                    <p class="observation observation-value">@(concept.Text)</p>*@
             }
             else
             {
@@ -90,9 +95,11 @@ else
                 else
                 {
                     //questions
-                    <p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                    timelineData.Add($"{observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu"}<br/>{observation.Code.Text}<br/>{observation.Value}");
+
+                    @*<p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
                     <p class="observation observation-question">Pytanie @(observation.Code.Text)</p>
-                    <p class="observation observation-value">Odpowiedź @(observation.Value)</p>
+                    <p class="observation observation-value">Odpowiedź @(observation.Value)</p>*@
                 }
             }
         </div>
@@ -232,5 +239,17 @@ else
     </script>
 
 }
+
+<script>
+    var timeline_data = [];
+        @foreach (var item in timelineData)
+        {
+            @:timeline_data.push({ time: new Date(), color: '#555', css: 'success', content: '@item' });
+        }
+
+    $("#element").timeline({
+        data: timeline_data
+    })
+</script>
 @Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
 
