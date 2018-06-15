@@ -62,7 +62,6 @@ else
             }
             else if (observation.Value is CodeableConcept concept)
             {
-
                 //death or sth
                 <div class="observationType-concept">
                     <p class="observation observation-code ">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
@@ -102,28 +101,28 @@ else
     @Html.ActionLink("Edytuj", "EditPatient", "Edit", new { id = Model.Data.Id }, new Dictionary<string, object> { { "class", "btn btn-success" } })
 
     //charts
-        <div class="tab-view">
-            <div class="tab-header">
-                <button class="tab-item btn" onclick="openTab('Tab1')">London</button>
-                <button class="tab-item btn" onclick="openTab('Tab2')">Paris</button>
-                <button class="tab-item btn" onclick="openTab('Tab3')">Tokyo</button>
-            </div>
-            <div id="Tab1" class="tab">
-                <div style="width:75%;">
-                    <canvas id="canvas"></canvas>
-                </div>
-            </div>
-
-            <div id="Tab2" class="tab" style="display:none">
-                <h2>Paris</h2>
-                <p>Paris is the capital of France.</p>
-            </div>
-
-            <div id="Tab3" class="tab" style="display:none">
-                <h2>Tokyo</h2>
-                <p>Tokyo is the capital of Japan.</p>
+    <div class="tab-view">
+        <div class="tab-header">
+            <button class="tab-item btn" onclick="openTab('Tab1')">London</button>
+            <button class="tab-item btn" onclick="openTab('Tab2')">Paris</button>
+            <button class="tab-item btn" onclick="openTab('Tab3')">Tokyo</button>
+        </div>
+        <div id="Tab1" class="tab">
+            <div style="width:75%;">
+                <canvas id="canvas"></canvas>
             </div>
         </div>
+
+        <div id="Tab2" class="tab" style="display:none">
+            <h2>Paris</h2>
+            <p>Paris is the capital of France.</p>
+        </div>
+
+        <div id="Tab3" class="tab" style="display:none">
+            <h2>Tokyo</h2>
+            <p>Tokyo is the capital of Japan.</p>
+        </div>
+    </div>
 }
 
 @Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })

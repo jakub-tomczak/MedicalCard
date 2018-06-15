@@ -17,15 +17,27 @@ namespace MedicalCard.Controllers
         public IActionResult Patient()
         {
             var resource = new ResourceGetter();
-            var r = resource.GetItems<Patient>(20);
+            return View(resource.GetItems<Patient>(20));
 
-            //var pat = r.FirstOrDefault();
+        }
 
-            //pat.Name.Add(HumanName.ForFamily("Abrakadabra"));
+        public IActionResult Search(string surname)
+        {
+            var resource = new ResourceGetter();
+            if (string.IsNullOrEmpty(surname))
+            {
+                ModelState.AddModelError("", "Surname is required");
+                return Patient();
+            }
+            else
+            {
+                return View(
+                    "Patient",
+                    resource.SearchItemsWithParameters<Patient>(
+                        new List<Tuple<string, string>>() { new Tuple<string, string>("family:contains", surname) }
+                    ));
+            }
 
-            //resource.UpdateItem(pat);
-            ViewBag.Patients = r;
-            return View();
         }
 
         public IActionResult About()
