@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "ViewPatient";
     var timelineIterator = 0;
+    var examinations = new Dictionary<string, List<MedicalCard.Misc.PatientValueExamination>>();
 }
 <link rel="stylesheet" type="text/css" href="~/css/timeline.css">
 <link rel="stylesheet" type="text/css" href="~/css/Observation.css">
@@ -12,118 +13,169 @@
 <script src="~/lib/chartjs/utils.js"></script>
 <script src="~/lib/chartjs/Chart.bundle.min.js"></script>
 
-
-@if (Model?.Data == null)
+@if (ViewBag.Error != null && Model == null)
 {
-    <h2>Brak danych o pacjencie</h2>
+    <h1>Błąd <p style="color: coral">@(ViewBag.ErrorMessage)</p></h1>
 }
 else
 {
-    <h2>Metryka pacjenta @(Model.Data.Name.FirstOrDefault()?.Family ?? "")</h2>
-    <table>
-        <tr>
-            <td class="navbar-header">Nazwisko</td>
-            <td>@(Model.Data.Name.FirstOrDefault()?.Family ?? "brak danych")</td>
-        </tr>
-        <tr>
-            <td>Imię/imiona</td>
-            <td>@(Model.Data.Name.FirstOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
-        </tr>
-        <tr>
-            <td>Data urodzenia</td>
-            <td>@(Model.Data.BirthDate)</td>
-        </tr>
-        <tr>
-            <td>
-                Dane kontaktowe
-            </td>
-            <td>
-                @foreach (var contact in Model.Data.Telecom)
-                {
-                    @($"{contact.System}: {contact.Value}")<br />;
-                }
-            </td>
-        </tr>
-        <tr></tr>
-    </table>
-
-    @foreach (var observation in Model.Observations)
+    @if (Model?.Data == null)
     {
+        <h2>Brak danych o pacjencie</h2>
+    }
+    else
+    {
+        <h2>Metryka pacjenta @(Model.Data.Name.FirstOrDefault()?.Family ?? "")</h2>
+        <table class="table">
+            <tr>
+                <td>Nazwisko</td>
+                <td>@(Model.Data.Name.FirstOrDefault()?.Family ?? "brak danych")</td>
+            </tr>
+            <tr>
+                <td>Imię/imiona</td>
+                <td>@(Model.Data.Name.FirstOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
+            </tr>
+            <tr>
+                <td>Data urodzenia</td>
+                <td>@(Model.Data.BirthDate)</td>
+            </tr>
+            <tr>
+                <td>
+                    Dane kontaktowe
+                </td>
+                <td>
+                    @foreach (var contact in Model.Data.Telecom)
+                    {
+                        @($"{contact.System}: {contact.Value}")<br />;
+                    }
+                </td>
+            </tr>
+            <tr></tr>
+        </table>
+
+        <form style="margin: 20px;" asp-action="ViewPatient" asp-controller="Presentation">
+            <label>Szukaj</label>
+            <input type="hidden" name="id" value="@(Model.Data.Id)">
+            <div class="form-group row">
+                <p class="col-sm-1 col-form-label" style="padding-top: 5px;">Data początkowa</p>
+                <div class="col-sm-11">
+                    <input type="date" name="startDate" style="width: 60px; min-width: 200px;" class="form-control" id="startDate" placeholder="Data początkowa">
+                </div>
+            </div>
+            <div class="form-group row">
+                <p class="col-sm-1 col-form-label" style="padding-top: 5px;">Data końcowa</p>
+                <div class="col-sm-11">
+                    <input type="date" name="endDate" style="width: 60px; min-width: 200px;" class="form-control" id="endDate" placeholder="Data końcowa">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Szukaj</button>
+        </form>
+        @if (ViewBag.startDate != null)
+        {
+            <p class="btn-danger">data początkowa : @(ViewBag.startDate)</p>
+        }
+
+        @if (ViewBag.endDate != null)
+        {
+            <p class="btn-danger">data końcowa @(ViewBag.endDate)</p>
+        }
+
+        @if (Model?.Observations == null || Model.Observations.Count == 0)
+        {
+            <p>Brak obserwacji dla pacjenta</p>
+        }
+
         <div class="timeline">
-            @if (observation.Value is SimpleQuantity simpleQuantity)
+            @foreach (var timelineObject in Model.TimelineObjects)
             {
                 <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
                     <div class="content observationType-simple-quantity">
-                        <h2 class="observation observation-question">@(observation.Code.Text)</h2>
-                        <p class="observation observation-value">@(simpleQuantity.Value.Value.ToString("F2") )</p>
-                        <p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                        <p class="observation observation-date">@(timelineObject.Date.ToString("dd-MM-yyyy"))</p>
+                        <h2 class="observation observation-question">@(timelineObject.Header)</h2>
+                        <p class="observation observation-value">@(timelineObject.Description)</p>
+                        <p class="observation observation-code">@(timelineObject.Code)</p>
+                        <p class="observation observation-eventType">@(timelineObject.EventTypeName)</p>
                     </div>
                 </div>
+
             }
-            else if (observation.Value is CodeableConcept concept)
-            {
-                //death or sth
-                <div class="observationType-concept">
-                    <p class="observation observation-code ">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                    <p class="observation observation-question ">Pytanie:@(observation.Code.Text)</p>
-                    <p class="observation observation-value ">@(concept.Text)</p>
-                </div>
-            }
-            else
-            {
-                @if (observation.Component.Count > 0)
+            @*@if (observation.Value is SimpleQuantity simpleQuantity)
                 {
-                    //blood pressure
-                    @foreach (var item in observation.Component)
-                    {
-                        <div class="observationType-component">
-                            <p class="observation observation-code ">@(item.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                            <p class="observation observation-question">@(item.Code.Text)</p>
-                            <p class="observation observation-value">@(item.Value)</p>
+                    <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
+                        <div class="content observationType-simple-quantity">
+                            <p class="observation observation-date">@(observation.Issued.Value.ToString("dd-MM-yyyy"))</p>
+                            <h2 class="observation observation-question">@(observation.Code.Text)</h2>
+                            <p class="observation observation-value">@(simpleQuantity.Value.Value.ToString("F2") )</p>
+                            <p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
                         </div>
-                    }
+                    </div>
+                }
+                else if (observation.Value is CodeableConcept concept)
+                {
+                    //death or sth
+                    <div class="observationType-concept">
+                        <p class="observation observation-code ">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                        <p class="observation observation-question ">Pytanie:@(observation.Code.Text)</p>
+                        <p class="observation observation-value ">@(concept.Text)</p>
+                    </div>
                 }
                 else
                 {
-                    //questions
+                    @if (observation.Component.Count > 0)
+                    {
+                        //blood pressure
+                        @foreach (var item in observation.Component)
+                        {
+                            <div class="observationType-component">
+                                <p class="observation observation-code ">@(item.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                                <p class="observation observation-question">@(item.Code.Text)</p>
+                                <p class="observation observation-value">@(item.Value)</p>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        //questions
 
-                    <div class="observationType-other">
-                        <p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                        <p class="observation observation-question">Pytanie @(observation.Code.Text)</p>
-                        <p class="observation observation-value">Odpowiedź @(observation.Value)</p>
-                    </div>
-                }
-            }
+                        <div class="observationType-other">
+                            <p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
+                            <p class="observation observation-question">Pytanie @(observation.Code.Text)</p>
+                            <p class="observation observation-value">Odpowiedź @(observation.Value)</p>
+                        </div>
+                    }
+                }*@
         </div>
 
-    }
 
-    @Html.ActionLink("Edytuj", "EditPatient", "Edit", new { id = Model.Data.Id }, new Dictionary<string, object> { { "class", "btn btn-success" } })
 
-    //charts
-    <div class="tab-view">
-        <div class="tab-header">
-            <button class="tab-item btn" onclick="openTab('Tab1')">London</button>
-            <button class="tab-item btn" onclick="openTab('Tab2')">Paris</button>
-            <button class="tab-item btn" onclick="openTab('Tab3')">Tokyo</button>
-        </div>
-        <div id="Tab1" class="tab">
-            <div style="width:75%;">
-                <canvas id="canvas"></canvas>
+        @Html.ActionLink("Edytuj", "EditPatient", "Edit", new { id = Model.Data.Id }, new Dictionary<string, object> { { "class", "btn btn-success" } })
+
+        //charts
+        <div class="tab-view">
+            <div class="tab-header">
+                <button class="tab-item btn" onclick="openTab('Tab1')">London</button>
+                <button class="tab-item btn" onclick="openTab('Tab2')">Paris</button>
+                <button class="tab-item btn" onclick="openTab('Tab3')">Tokyo</button>
+            </div>
+            <div id="Tab1" class="tab">
+                <div style="width:75%;">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+
+            <div id="Tab2" class="tab" style="display:none">
+                <h2>Paris</h2>
+                <p>Paris is the capital of France.</p>
+            </div>
+
+            <div id="Tab3" class="tab" style="display:none">
+                <h2>Tokyo</h2>
+                <p>Tokyo is the capital of Japan.</p>
             </div>
         </div>
-
-        <div id="Tab2" class="tab" style="display:none">
-            <h2>Paris</h2>
-            <p>Paris is the capital of France.</p>
-        </div>
-
-        <div id="Tab3" class="tab" style="display:none">
-            <h2>Tokyo</h2>
-            <p>Tokyo is the capital of Japan.</p>
-        </div>
-    </div>
+    }
 }
+
 
 @Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
 

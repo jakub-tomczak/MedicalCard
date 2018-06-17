@@ -25,6 +25,10 @@ namespace MedicalCard.Helpers
             return client.Update<T>(item) != null;
         }
 
+        public List<T> SearchItemsWithParameters<T>(string key, string value, int entriesLimit = SearchLimit) where T : Resource, new()
+        {
+            return SearchItemsWithParameters<T>(new List<Tuple<string, string>>() { new Tuple<string, string>(key, value) }, entriesLimit);
+        }
         public List<T> SearchItemsWithParameters<T>(List<Tuple<String, String>> searchParameters, int entriesLimit = SearchLimit) where T : Resource, new()
         {
             var parameters = new SearchParams();
