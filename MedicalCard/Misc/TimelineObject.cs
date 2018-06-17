@@ -4,7 +4,7 @@ namespace MedicalCard.Misc
 {
     public class TimelineObject
     {
-        public TimelineEvent EventType { set => eventType = value; }
+        public TimelineEvent EventType { get => eventType; set => eventType = value; }
         public string EventTypeName { get => GetEventName(); }
         public string Code { get => code; set => code = value; }
         public string Header { get => header; set => header = value; }
@@ -16,7 +16,6 @@ namespace MedicalCard.Misc
         private string description;
         private string code;
         private TimelineEvent eventType;
-
         private string GetEventName()
         {
             switch (eventType)
@@ -24,7 +23,7 @@ namespace MedicalCard.Misc
                 case TimelineEvent.Medication:
                     return "Lekarstwo";
                 case TimelineEvent.MedicationRequest:
-                    return "Prośba o lekarstow";
+                    return "Prośba o lekarstwo";
                 case TimelineEvent.ObservationMisc:
                     return "Obserwacja";
                 case TimelineEvent.ObservationDeath:

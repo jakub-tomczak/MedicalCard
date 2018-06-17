@@ -82,7 +82,7 @@ namespace MedicalCard.Controllers
                     return new TimelineObject()
                     {
                         Date = (x.AuthoredOnElement.ToDateTime() ?? DateTime.MinValue),
-                        Header = "Prośba o lek",
+                        Header = "Podanie leku",
                         Description = (medication.Text ?? "Nieznana nazwa leku"),
                         Code = medication.Coding.FirstOrDefault().Code ?? DefaultCodeNumber,
                         EventType = TimelineEvent.MedicationRequest
@@ -124,27 +124,34 @@ namespace MedicalCard.Controllers
         private List<PatientValueExamination> TryGetObservationValue(Observation observation)
         {
             var value = new List<PatientValueExamination>();
-            if (observation.Value is SimpleQuantity simple)
+            if (observation.Value is SimpleQuantity quantity)
             {
                 value.Add(new PatientValueExamination()
                 {
                     Code = observation.Code.Coding.FirstOrDefault()?.Code ?? DefaultCodeNumber,
                     Name = observation.Code.Text,
                     Date = observation.Issued.Value.Date,
-                    Value = simple.Value.Value
+                    Value = quantity.Value.Value,
+                    Unit = quantity.Unit
                 });
             }
             else
             {
                 foreach (var item in observation.Component)
                 {
-                    value.Add(new PatientValueExamination()
+                    if (item.Value is SimpleQuantity itemValue)
                     {
-                        Code = item.Code.Coding.FirstOrDefault()?.Code ?? DefaultCodeNumber,
-                        Description = item.Code.Text,
-                        Name = observation.Code.Text,
-                        Date = observation.Issued.Value.Date
-                    });
+                        value.Add(new PatientValueExamination()
+                        {
+                            Code = item.Code.Coding.FirstOrDefault()?.Code ?? DefaultCodeNumber,
+                            Description = item.Code.Text,
+                            Name = observation.Code.Text,
+                            Date = observation.Issued.Value.Date,
+                            Unit = itemValue.Unit,
+                            Value = itemValue.Value.Value
+                        });
+
+                    }
                 }
             }
             return value;

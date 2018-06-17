@@ -1,5 +1,5 @@
 ﻿.observation-code {
-    color: gray;
+    color: dimgray;
     font-size: small;
 }
 
@@ -11,10 +11,10 @@
     background-color: darkcyan;
 }
 
-.observationType-other {
-    background-color: khaki;
+.observationType-ObservationMisc {
+    background-color: #ff8e8e;
 }
 
-.observationType-simple-quantity {
-    background-color: aquamarine;
+.observationType-MedicationRequest {
+    background-color: #8be78b;
 }

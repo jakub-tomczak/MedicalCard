@@ -145,7 +145,7 @@ else
     @foreach (var timelineObject in Model.TimelineObjects)
     {
         <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
-            <div class="content observationType-simple-quantity">
+            <div class="content observationType-@(timelineObject.EventType)">
                 <p class="observation observation-date">@(timelineObject.Date.ToString("dd-MM-yyyy"))</p>
                 <h2 class="observation observation-question">@(timelineObject.Header)</h2>
                 <p class="observation observation-value">@(timelineObject.Description)</p>
