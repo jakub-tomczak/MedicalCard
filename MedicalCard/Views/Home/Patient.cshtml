@@ -12,6 +12,8 @@
         </div>
     </div>
     <button type="submit" class="btn btn-primary">Szukaj</button>
+    @Html.ActionLink("Wyczyść filtry", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
+
 </form>
 
 <h1>Lista pacjentów</h1>

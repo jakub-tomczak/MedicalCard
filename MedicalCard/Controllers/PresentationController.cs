@@ -89,16 +89,6 @@ namespace MedicalCard.Controllers
                     };
                 });
 
-            //var valueSingleObservations = patientsObservations.Where(x => x.Value is SimpleQuantity).
-            //    Select(x => new PatientValueExamination()
-            //    {
-            //        Code = x.Code.Coding.FirstOrDefault()?.Code ?? DefaultCodeNumber,
-            //        Name = x.Code.Text,
-            //        Date = x.Issued.Value.Date,
-            //        Value = (x.Value as SimpleQuantity).Value.Value
-            //    }).GroupBy(x => x.Code);
-
-
             foreach (var observation in valueObservations)
             {
                 List<PatientValueExamination> examinations = TryGetObservationValue(observation);

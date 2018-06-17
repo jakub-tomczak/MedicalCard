@@ -1,5 +1,4 @@
 ﻿@model MedicalCard.ViewModels.PatientSummary;
-@using Hl7.Fhir.Model;
 @{
     ViewData["Title"] = "ViewPatient";
     var timelineIterator = 0;
@@ -12,6 +11,7 @@
 <script src="~/js/TabView.js"></script>
 <script src="~/lib/chartjs/utils.js"></script>
 <script src="~/lib/chartjs/Chart.bundle.min.js"></script>
+<script src="~/js/DrawChart.js"></script>
 
 @if (ViewBag.Error != null && Model == null)
 {
@@ -52,6 +52,7 @@ else
             </tr>
             <tr></tr>
         </table>
+        @Html.ActionLink("Edytuj", "EditPatient", "Edit", new { id = Model.Data.Id }, new Dictionary<string, object> { { "class", "btn btn-success" } })
 
         <form style="margin: 20px;" asp-action="ViewPatient" asp-controller="Presentation">
             <label>Szukaj</label>
@@ -85,97 +86,74 @@ else
             <p>Brak obserwacji dla pacjenta</p>
         }
 
-        <div class="timeline">
-            @foreach (var timelineObject in Model.TimelineObjects)
-            {
-                <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
-                    <div class="content observationType-simple-quantity">
-                        <p class="observation observation-date">@(timelineObject.Date.ToString("dd-MM-yyyy"))</p>
-                        <h2 class="observation observation-question">@(timelineObject.Header)</h2>
-                        <p class="observation observation-value">@(timelineObject.Description)</p>
-                        <p class="observation observation-code">@(timelineObject.Code)</p>
-                        <p class="observation observation-eventType">@(timelineObject.EventTypeName)</p>
-                    </div>
-                </div>
-
-            }
-            @*@if (observation.Value is SimpleQuantity simpleQuantity)
-                {
-                    <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
-                        <div class="content observationType-simple-quantity">
-                            <p class="observation observation-date">@(observation.Issued.Value.ToString("dd-MM-yyyy"))</p>
-                            <h2 class="observation observation-question">@(observation.Code.Text)</h2>
-                            <p class="observation observation-value">@(simpleQuantity.Value.Value.ToString("F2") )</p>
-                            <p class="observation observation-code">@(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                        </div>
-                    </div>
-                }
-                else if (observation.Value is CodeableConcept concept)
-                {
-                    //death or sth
-                    <div class="observationType-concept">
-                        <p class="observation observation-code ">Kod: @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                        <p class="observation observation-question ">Pytanie:@(observation.Code.Text)</p>
-                        <p class="observation observation-value ">@(concept.Text)</p>
-                    </div>
-                }
-                else
-                {
-                    @if (observation.Component.Count > 0)
-                    {
-                        //blood pressure
-                        @foreach (var item in observation.Component)
-                        {
-                            <div class="observationType-component">
-                                <p class="observation observation-code ">@(item.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                                <p class="observation observation-question">@(item.Code.Text)</p>
-                                <p class="observation observation-value">@(item.Value)</p>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        //questions
-
-                        <div class="observationType-other">
-                            <p class="observation observation-code">Kod @(observation.Code.Coding.FirstOrDefault()?.Code ?? "Brak kodu")</p>
-                            <p class="observation observation-question">Pytanie @(observation.Code.Text)</p>
-                            <p class="observation observation-value">Odpowiedź @(observation.Value)</p>
-                        </div>
-                    }
-                }*@
-        </div>
-
-
-
-        @Html.ActionLink("Edytuj", "EditPatient", "Edit", new { id = Model.Data.Id }, new Dictionary<string, object> { { "class", "btn btn-success" } })
-
-        //charts
         <div class="tab-view">
+
             <div class="tab-header">
-                <button class="tab-item btn" onclick="openTab('Tab1')">London</button>
-                <button class="tab-item btn" onclick="openTab('Tab2')">Paris</button>
-                <button class="tab-item btn" onclick="openTab('Tab3')">Tokyo</button>
+                @*generate buttons*@
+                @foreach (var item in Model.ValueExaminations)
+                {
+                    var firstName = item.Value.First().Name;
+                    if (item.Value.Count > 0 && !string.IsNullOrEmpty(firstName))
+                    {
+                        <button class="tab-item btn" onclick="drawChart(data@(item.Key.Replace("-","_")))">@(firstName)</button>
+                    }
+                }
             </div>
-            <div id="Tab1" class="tab">
-                <div style="width:75%;">
+            <div id="tab" class="tab">
+                <div style="width:100%;">
                     <canvas id="canvas"></canvas>
                 </div>
             </div>
+            @foreach (var item in Model.ValueExaminations)
+            {
 
-            <div id="Tab2" class="tab" style="display:none">
-                <h2>Paris</h2>
-                <p>Paris is the capital of France.</p>
-            </div>
+                var value = item.Value.First();
+                if (item.Value.Count < 1 || string.IsNullOrEmpty(value.Name))
+                {
+                    continue;
+                }
 
-            <div id="Tab3" class="tab" style="display:none">
-                <h2>Tokyo</h2>
-                <p>Tokyo is the capital of Japan.</p>
-            </div>
+                <script>
+                     var data@(item.Key.Replace("-", "_")) =
+                            {
+                                label: '@(value.Name)',
+                                title: '@(value.Name)',
+                                yUnits: 'kg',
+                                xValues: @(Json.Serialize(item.Value.Select(x => x.Date.Value.ToString("dd-MM-yyyy")))),
+                                yValues: @(Json.Serialize(item.Value.Select(x => x.Value)))
+                            };
+                </script>
+            }
         </div>
+        <script>
+            $(document).ready(
+                () => {
+                    var ctx = document.getElementById('canvas').getContext('2d');
+                    chartHanlder = new Chart(ctx, null);//ctx, config
+                    drawChart(data@(Model.ValueExaminations.First().Key.Replace("-", "_")))
+                }
+            )
+        </script>
     }
 }
 
 
 @Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
 
+
+<div class="timeline">
+    @foreach (var timelineObject in Model.TimelineObjects)
+    {
+        <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
+            <div class="content observationType-simple-quantity">
+                <p class="observation observation-date">@(timelineObject.Date.ToString("dd-MM-yyyy"))</p>
+                <h2 class="observation observation-question">@(timelineObject.Header)</h2>
+                <p class="observation observation-value">@(timelineObject.Description)</p>
+                <p class="observation observation-code">@(timelineObject.Code)</p>
+                <p class="observation observation-eventType">@(timelineObject.EventTypeName)</p>
+            </div>
+        </div>
+
+    }
+</div>
+@Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
