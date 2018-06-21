@@ -21,6 +21,8 @@ namespace MedicalCard.Misc
         public static bool TryValidateString(string input, out string validated, uint minLength = 0, uint maxLength = UInt32.MaxValue, string regexPattern = null)
         {
             validated = input;
+            if (input == null)
+                return false;
             var returnValue = validated.Length >= minLength && validated.Length <= maxLength;
             if (string.IsNullOrEmpty(regexPattern))
             {

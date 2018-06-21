@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Hl7.Fhir.Model;
 using Hl7.Fhir.Serialization;
 using MedicalCard.Helpers;
+using MedicalCard.Models;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 
@@ -22,24 +23,25 @@ namespace MedicalCard.Controllers
         {
             var res = new ResourceGetter();
             var patient = res.GetItem<Patient>(id);
-            return View(patient);
+            var editablePatient = new EditedPatient(id);
+            editablePatient.MapFromResource(patient);
+            return View(editablePatient);
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult PatientEdited(string id, string familyname)
+        public IActionResult PatientEdited(EditedPatient patient)
         {
-            var formData = HttpContext.Request.Form;
-            var serialized = JsonConvert.SerializeObject(formData);
-            var res = new ResourceGetter();
-            var patient = res.GetItems<Patient>().FirstOrDefault();
-
-            var b = new FhirJsonSerializer();
-            var strBuilder = new StringBuilder();
-            b.Serialize(patient, new JsonTextWriter(new StringWriter(strBuilder)));
-
-
-            var a = new FhirJsonParser();
-            var newPatient = a.Parse<Patient>(new JsonTextReader(new StringReader(strBuilder.ToString())));
+            if (ModelState.IsValid)
+            {
+                var editedPatient = patient.MapToResource();
+                var client = new ResourceGetter();
+                var result = client.UpdateItem(editedPatient);
+                Console.WriteLine("Success");
+            }
+            else
+            {
+                return View("EditPatient", patient);
+            }
             return RedirectToAction("Patient", "Home");
         }
     }

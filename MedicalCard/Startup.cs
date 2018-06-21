@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hl7.Fhir.Model;
+using MedicalCard.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +23,9 @@ namespace MedicalCard
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddTransient<IMapableResource<Address, EditedAddress>, EditedAddress>();
+            services.AddTransient<IMapableResource<ContactPoint, EditedContactPoint>, EditedContactPoint>();
+            services.AddTransient<IMapableResource<Patient, EditedPatient>, EditedPatient>();
             services.AddMvc();
         }
 
