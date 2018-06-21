@@ -1,14 +1,10 @@
-﻿using System;
+﻿using Hl7.Fhir.Model;
+using MedicalCard.Helpers;
+using MedicalCard.Models;
+using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using MedicalCard.Models;
-using System.Xml.Linq;
-using Hl7.Fhir.Rest;
-using Hl7.Fhir.Model;
-using MedicalCard.Helpers;
 
 namespace MedicalCard.Controllers
 {
@@ -17,8 +13,14 @@ namespace MedicalCard.Controllers
         public IActionResult Patient()
         {
             var resource = new ResourceGetter();
-            return View(resource.GetItems<Patient>(20));
-
+            try
+            {
+                return View(resource.GetItems<Patient>(20));
+            }
+            catch (System.Net.WebException)
+            {
+                return View();
+            }
         }
 
         public IActionResult Search(string surname)

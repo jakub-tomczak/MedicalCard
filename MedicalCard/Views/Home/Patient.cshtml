@@ -3,18 +3,20 @@
     ViewData["Title"] = "Pacjenci";
 }
 
-<form style="margin: 20px;" asp-action="Search" asp-controller="Home">
-    <label for="patientsSurname">Szukaj</label>
-    <div class="form-group row">
-        <p class="col-sm-1 col-form-label" style="padding-top: 5px;">Nazwisko</p>
-        <div class="col-sm-11">
-            <input type="text" name="surname" style="width: 60px; min-width: 200px;" class="form-control" id="patientsSurname" aria-describedby="nameHelp" placeholder="Wpisz nazwisko pacjenta">
+@if (Model != null)
+{
+    <form style="margin: 20px;" asp-action="Search" asp-controller="Home">
+        <label for="patientsSurname">Szukaj</label>
+        <div class="form-group row">
+            <p class="col-sm-1 col-form-label" style="padding-top: 5px;">Nazwisko</p>
+            <div class="col-sm-11">
+                <input type="text" name="surname" style="width: 60px; min-width: 200px;" class="form-control" id="patientsSurname" aria-describedby="nameHelp" placeholder="Wpisz nazwisko pacjenta">
+            </div>
         </div>
-    </div>
-    <button type="submit" class="btn btn-primary">Szukaj</button>
-    @Html.ActionLink("Wyczyść filtry", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
-
-</form>
+        <button type="submit" class="btn btn-primary">Szukaj</button>
+        @Html.ActionLink("Wyczyść filtry", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
+    </form>
+}
 
 <h1>Lista pacjentów</h1>
 <table class="table table-hover">
@@ -23,7 +25,13 @@
         <th>Imię pacjenta</th>
         <th>Dane kontaktowe</th>
     </tr>
-    @if (Model.Count() == 0)
+    @if (Model == null)
+    {
+        <tr>
+            <td colspan="3" style="text-align:center;"><b style="color: coral;">Brak połączenia z bazą danych</b></td>
+        </tr>
+    }
+    else if (Model.Count() == 0)
     {
         <tr>
             <td colspan="3" style="text-align:center;"><b style="color: coral;">Brak danych</b></td>
