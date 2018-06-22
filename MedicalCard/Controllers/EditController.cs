@@ -36,7 +36,6 @@ namespace MedicalCard.Controllers
                 var editedPatient = patient.MapToResource();
                 var client = new ResourceGetter();
                 var result = client.UpdateItem(editedPatient);
-                Console.WriteLine("Success");
             }
             else
             {

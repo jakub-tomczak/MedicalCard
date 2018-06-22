@@ -53,9 +53,19 @@
             </tr>
         }
     }
-
 </table>
 
+@if (ViewBag.bundle != null)
+{
+    if (!string.IsNullOrEmpty(ViewBag.bundle["previousPageLink"]))
+    {
+        @Html.ActionLink("Poprzednia strona", "ChangePage", "Home", new { id = ViewBag.bundle["id"], nextPage = ViewBag.bundle["previousPageLink"], goForward = false })
+    }
+    if (!string.IsNullOrEmpty(ViewBag.bundle["nextPageLink"]))
+    {
+        @Html.ActionLink("Kolejna strona", "ChangePage", "Home", new { id = ViewBag.bundle["id"], nextPage = ViewBag.bundle["nextPageLink"], goForward = true })
+    }
+}
 <script>
     jQuery(document).ready(function ($) {
         $(".clickable-row").click(function () {

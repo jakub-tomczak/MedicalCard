@@ -14,9 +14,10 @@ namespace MedicalCard.Helpers
             client = new FhirClient(ServiceRootUrl);
         }
 
-        public IEnumerable<T> GetItems<T>(int limit = 10) where T : Resource, new()
+        public IEnumerable<T> GetItems<T>(out Bundle bundle, int limit = 10) where T : Resource, new()
         {
             var res = client.Search<T>(pageSize: limit);
+            bundle = res;
             return res.Entry.Select(x => x.Resource).Cast<T>();
         }
 
@@ -65,6 +66,20 @@ namespace MedicalCard.Helpers
             catch (Exception)
             {
                 return null;
+            }
+        }
+
+        public bool TryGetPage(Bundle bundle, PageDirection direction, out Bundle requestedPage)
+        {
+            try
+            {
+                requestedPage = client.Continue(bundle, direction);
+                return requestedPage != null;
+            }
+            catch (FhirOperationException)
+            {
+                requestedPage = null;
+                return false;
             }
         }
 
