@@ -21,8 +21,12 @@ namespace MedicalCard.Controllers
         }
         public IActionResult EditPatient(string id)
         {
+            if (string.IsNullOrEmpty(id))
+                return RedirectToAction("Patient", "Home");
             var res = new ResourceGetter();
             var patient = res.GetItem<Patient>(id);
+            if (patient == null)
+                return RedirectToAction("Patient", "Home");
             var editablePatient = new EditedPatient(id);
             editablePatient.MapFromResource(patient);
             return View(editablePatient);
@@ -33,9 +37,19 @@ namespace MedicalCard.Controllers
         {
             if (ModelState.IsValid)
             {
-                var editedPatient = patient.MapToResource();
                 var client = new ResourceGetter();
-                var result = client.UpdateItem(editedPatient);
+                if (string.IsNullOrEmpty(patient.Id))
+                {
+                    return RedirectToAction("Patient", "Home");
+                }
+                //fetch original patient
+                var originalPatient = client.GetItem<Patient>(patient.Id);
+                if (originalPatient != null)
+                {
+                    if (patient.TryMergeWithResource(originalPatient))
+                        client.UpdateItem(originalPatient);
+                }
+
             }
             else
             {

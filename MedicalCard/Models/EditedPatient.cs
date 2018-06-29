@@ -1,6 +1,5 @@
 ﻿using Hl7.Fhir.Model;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
@@ -10,7 +9,6 @@ namespace MedicalCard.Models
     {
         public EditedPatient()
         {
-            this.telecom = new List<EditedContactPoint>();
         }
         public EditedPatient(string id)
             : this()
@@ -44,17 +42,10 @@ namespace MedicalCard.Models
             //gender
             original.Gender = this.gender;
             //address
-            if (original.Address.Any())
-            {
-                original.Address[0] = address.MapToResource();
-            }
-            else
-            {
-                original.Address.Add(address.MapToResource());
-            }
+            original.Address.Add(address.MapToResource());
+
             //contact
-            original.Telecom.Clear();
-            original.Telecom.AddRange(telecom.Select(x => x.MapToResource()));
+            original.Telecom.Add(telecom.MapToResource());
             return original;
         }
 
@@ -66,23 +57,18 @@ namespace MedicalCard.Models
             {
                 this.birthDate = birthDate.Value;
             }
-            var name = original.Name.FirstOrDefault();
+            var name = original.Name.LastOrDefault();
 
             if (name != null)
             {
                 this.givenName = name.Given.Aggregate((x, y) => $"{x} {y}");
                 this.familyName = name.Family;
             }
-            this.telecom = original.Telecom.MapTelecom();
-            this.address = new EditedAddress().MapFromResource(original.Address.FirstOrDefault());
+            this.telecom = new EditedContactPoint().MapFromResource(original.Telecom.LastOrDefault());
+            this.address = new EditedAddress().MapFromResource(original.Address.LastOrDefault());
             this.gender = original.Gender ?? AdministrativeGender.Unknown;
 
             return this;
-        }
-
-        public void AddContact(EditedContactPoint contactPoint)
-        {
-            telecom.Add(contactPoint);
         }
 
         public override Patient MapToResource()
@@ -104,28 +90,60 @@ namespace MedicalCard.Models
             //address
             newPatient.Address.Add(address.MapToResource());
             //contact
-            newPatient.Telecom.AddRange(telecom.Select(x => x.MapToResource()));
+            newPatient.Telecom.Add(telecom.MapToResource());
             return newPatient;
         }
 
+        public override bool TryMergeWithResource(Patient original)
+        {
+            var patient = MapToResource();
+            if (original.Id != patient.Id)
+                return false;
+
+            original.Name.AddRange(patient.Name);
+            //remove the last one and add the new one
+            if (original.Address.Any())
+                original.Address.RemoveAt(original.Address.Count - 1);
+            original.Address.Add(patient.Address.First());
+            //the same for the telecom
+            if (original.Telecom.Any())
+                original.Telecom.RemoveAt(original.Telecom.Count - 1);
+            original.Telecom.Add(patient.Telecom.First());
+
+            original.BirthDateElement = patient.BirthDateElement;
+            original.Gender = patient.Gender;
+            return true;
+        }
+
+        [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
+        [Required(ErrorMessage = "Data urodzenia jest wymagana")]
         [Display(Name = "Data urodzenia", Prompt = "Podaj datę urodzenia")]
         [DataType(DataType.DateTime)]
         public DateTime BirthDate { get => birthDate; set => birthDate = value; }
-        [Required(ErrorMessage = "To pole jest wymagane!")]
-        public string GivenName { get => givenName; set => givenName = value; }
-        [Required(ErrorMessage = "Nazwisko jest wymagane!")]
-        public string FamilyName { get => familyName; set => familyName = value; }
-        public AdministrativeGender Gender { get => gender; set => gender = value; }
-        [Required]
-        public EditedAddress Address { get => address; set => address = value; }
 
-        public List<EditedContactPoint> Telecom { get => telecom; }
+        [Required(ErrorMessage = "To pole jest wymagane!")]
+        [StringLength(30, ErrorMessage = "Maksymalna długośc pola wynosi 30 znaków.")]
+        [Display(Name = "Imię")]
+        public string GivenName { get => givenName; set => givenName = value; }
+
+        [Required(ErrorMessage = "Nazwisko jest wymagane!")]
+        [StringLength(30, ErrorMessage = "Maksymalna długośc pola wynosi 30 znaków.")]
+        [Display(Name = "Nazwisko rodowe")]
+        public string FamilyName { get => familyName; set => familyName = value; }
+
+        [Display(Name = "Płeć")]
+        [Required(ErrorMessage = "Wybierz płeć")]
+        public AdministrativeGender Gender { get => gender; set => gender = value; }
+
+        public EditedAddress Address { get => address; set => address = value; }
+        public EditedContactPoint Telecom { get => telecom; set => telecom = value; }
+
 
         private DateTime birthDate;
         private string givenName;
         private string familyName;
         private AdministrativeGender gender;
         private EditedAddress address;
-        private List<EditedContactPoint> telecom;
+        private EditedContactPoint telecom;
     }
 }

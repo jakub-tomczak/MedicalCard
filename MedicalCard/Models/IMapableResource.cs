@@ -13,6 +13,15 @@ namespace MedicalCard.Models
         /// <param name="original"></param>
         /// <returns></returns>
         G MapFromResource(T original);
+        /// <summary>
+        /// Maps edited resource to the object of type T.
+        /// </summary>
+        /// <returns></returns>
         T MapToResource();
+        /// <summary>
+        /// Merges an object with the original one.
+        /// </summary>
+        /// <returns></returns>
+        bool TryMergeWithResource(T original);
     }
 }

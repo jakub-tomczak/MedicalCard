@@ -24,9 +24,12 @@ namespace MedicalCard.Models
 
         public EditedContactPoint MapFromResource(ContactPoint original)
         {
-            this.system = original.System ?? ContactPointSystem.Other;
-            this.contactValue = original.Value;
-            this.contactDetails = original.ValueElement?.Value ?? string.Empty;
+            if (original != null)
+            {
+                this.system = original.System ?? ContactPointSystem.Other;
+                this.contactValue = original.Value;
+                this.contactDetails = original.ValueElement?.Value ?? string.Empty;
+            }
             return this;
         }
 
@@ -38,8 +41,29 @@ namespace MedicalCard.Models
                 Value = this.contactValue,
                 ValueElement = new FhirString(this.contactDetails)
             };
-
         }
+
+        public bool TryMergeWithResource(ContactPoint original)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 869453999;
+            hashCode = hashCode * -1521134295 + system.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(contactValue);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(contactDetails);
+            return hashCode;
+        }
+
+        public ContactPointSystem System { get => system; set => system = value; }
+        public string ContactValue { get => contactValue; set => contactValue = value; }
+        [Required]
+        [Display(Name = "Numer telefonu")]
+        [StringLength(12, ErrorMessage = "Długość pola wynosi 9-13 znaków.")]
+        [RegularExpression(@"\d{9,13}", ErrorMessage = "Numer telefonu musi mieć od 9 do 13 znaków. (bez spacji)")]
+        public string ContactDetails { get => contactDetails; set => contactDetails = value; }
 
         private ContactPointSystem system;
         private string contactValue;

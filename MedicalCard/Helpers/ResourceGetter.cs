@@ -55,12 +55,31 @@ namespace MedicalCard.Helpers
             return outList.Take(entriesLimit).ToList();
         }
 
+        public bool AddItem<T>(T item) where T : Resource, new()
+        {
+            return client.Create<T>(item) != null;
+        }
+
+        public bool RemoveItem<T>(T item) where T : Resource, new()
+        {
+            try
+            {
+                client.Delete(string.Format(ServerBase, item.Id));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private const string ServerBase = "http://localhost:8080/baseDstu3/Patient/{0}";
+
         public T GetItem<T>(string id) where T : Resource, new()
         {
             try
             {
                 var resource = client.SearchById<T>(id);
-
                 return resource.Entry?.FirstOrDefault()?.Resource as T;
             }
             catch (Exception)

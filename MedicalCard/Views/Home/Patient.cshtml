@@ -2,6 +2,14 @@
 @{
     ViewData["Title"] = "Pacjenci";
 }
+@if (ViewBag.errorMessage != null)
+{
+    <p class="alert alert-danger">@ViewBag.errorMessage</p>
+}
+@if (ViewBag.infoMessage != null)
+{
+    <p class="alert alert-warning">@ViewBag.infoMessage</p>
+}
 
 @if (Model != null)
 {
@@ -17,6 +25,7 @@
         @Html.ActionLink("Wyczyść filtry", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
     </form>
 }
+@Html.ActionLink("Dodaj pacjenta", "CreatePatient", "Create", new { }, new Dictionary<string, object> { { "class", "btn btn-success" } })
 
 <h1>Lista pacjentów</h1>
 <table class="table table-hover">
@@ -24,6 +33,10 @@
         <th>Nazwisko pacjenta</th>
         <th>Imię pacjenta</th>
         <th>Dane kontaktowe</th>
+        <th>Miasto</th>
+        <th>ID</th>
+        <th></th>
+        <th></th>
     </tr>
     @if (Model == null)
     {
@@ -42,12 +55,39 @@
         @foreach (var item in Model)
         {
             <tr class="clickable-row" data-href="\Presentation\ViewPatient\@(item.Id)">
-                <td>@(item.Name.FirstOrDefault()?.Family ?? "brak danych")</td>
-                <td>@(item.Name.FirstOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
+                <td>@(item.Name.LastOrDefault()?.Family ?? "brak danych")</td>
+                <td>@(item.Name.LastOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
                 <td>
                     @foreach (var contact in item.Telecom)
                     {
-                        @($"{contact.System}: {contact.Value}")<br />;
+                        @($"{contact.System}: {contact.Value}")<br />
+                    }
+                </td>
+                <td>@(item.Address?.LastOrDefault().City ?? "brak danych")</td>
+                <td style="font-size: xx-small; color: darkslategrey;">@item.Id</td>
+                <td>
+                    @Html.ActionLink("Pokaż", "ViewPatient", "Presentation", new { id = item.Id }, new { @class = "btn btn-success" })
+                </td>
+                   
+                <td>
+                    @Html.ActionLink("Usuń", "Delete", "Home", new { id = item.Id }, new { @class = "btn btn-danger" })
+                </td>
+            </tr>
+        }
+        @if (ViewBag.bundle != null)
+        {
+            <tr>
+                <td>
+                    @if (!string.IsNullOrEmpty(ViewBag.bundle["previousPageLink"]))
+                    {
+                        @Html.ActionLink("Poprzednia strona", "ChangePage", "Home", new { id = ViewBag.bundle["id"], nextPage = ViewBag.bundle["previousPageLink"], goForward = false }, new { @class = "btn btn-success" })
+                    }
+                </td>
+                <td colspan="5"></td>
+                <td>
+                    @if (!string.IsNullOrEmpty(ViewBag.bundle["nextPageLink"]))
+                    {
+                        @Html.ActionLink("Kolejna strona", "ChangePage", "Home", new { id = ViewBag.bundle["id"], nextPage = ViewBag.bundle["nextPageLink"], goForward = true }, new { @class = "btn btn-success" })
                     }
                 </td>
             </tr>
@@ -55,24 +95,6 @@
     }
 </table>
 
-@if (ViewBag.bundle != null)
-{
-    if (!string.IsNullOrEmpty(ViewBag.bundle["previousPageLink"]))
-    {
-        @Html.ActionLink("Poprzednia strona", "ChangePage", "Home", new { id = ViewBag.bundle["id"], nextPage = ViewBag.bundle["previousPageLink"], goForward = false })
-    }
-    if (!string.IsNullOrEmpty(ViewBag.bundle["nextPageLink"]))
-    {
-        @Html.ActionLink("Kolejna strona", "ChangePage", "Home", new { id = ViewBag.bundle["id"], nextPage = ViewBag.bundle["nextPageLink"], goForward = true })
-    }
-}
-<script>
-    jQuery(document).ready(function ($) {
-        $(".clickable-row").click(function () {
-            window.location = $(this).data("href")
-        });
-    });
-</script>
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.12.1/bootstrap-table.min.css">
 
@@ -81,3 +103,31 @@
 
 <!-- Latest compiled and minified Locales -->
 <script src="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.12.1/locale/bootstrap-table-zh-CN.min.js"></script>
+
+
+<script>
+    $(function () {
+        $("#dialog-message").dialog({
+            modal: true,
+            buttons: {
+                Ok: function () {
+                    $(this).dialog("close");
+                }
+            }
+        });
+    });
+
+    function deletePatient(name, id) {
+        $('#delpatientName').text( name )
+        $('#delpatientID').text(id) 
+
+        $("#dialog-message").dialog({
+            modal: true,
+            buttons: {
+                Ok: function () {
+                    $(this).dialog("close");
+                }
+            }
+        });
+    }
+</script>

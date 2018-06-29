@@ -52,6 +52,9 @@ namespace MedicalCard
                 routes.MapRoute(
                     name: "presentation",
                     template: "{controller=Presentation}/{action=ViewPatient}/{id?}");
+                routes.MapRoute(
+                    name: "create",
+                    template: "{controller=Create}/{action=CreatePatient}");
             });
         }
     }

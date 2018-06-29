@@ -25,15 +25,15 @@ else
     }
     else
     {
-        <h2>Metryka pacjenta @(Model.Data.Name.FirstOrDefault()?.Family ?? "")</h2>
+        <h2>Metryka pacjenta @(Model.Data.Name.LastOrDefault()?.Family ?? "")</h2>
         <table class="table">
             <tr>
                 <td>Nazwisko</td>
-                <td>@(Model.Data.Name.FirstOrDefault()?.Family ?? "brak danych")</td>
+                <td>@(Model.Data.Name.LastOrDefault()?.Family ?? "brak danych")</td>
             </tr>
             <tr>
                 <td>Imię/imiona</td>
-                <td>@(Model.Data.Name.FirstOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
+                <td>@(Model.Data.Name.LastOrDefault()?.Given.Aggregate((x, y) => $"{x} {y}") ?? "brak danych")</td>
             </tr>
             <tr>
                 <td>Data urodzenia</td>
@@ -60,25 +60,29 @@ else
             <div class="form-group row">
                 <p class="col-sm-1 col-form-label" style="padding-top: 5px;">Data początkowa</p>
                 <div class="col-sm-11">
-                    <input type="date" name="startDate" style="width: 60px; min-width: 200px;" class="form-control" id="startDate" placeholder="Data początkowa">
+                    <input type="date" name="startDate" style="width: 60px; min-width: 200px;"
+                           value="1900-01-01"
+                           class="form-control" id="startDate" placeholder="Data początkowa" min="1900-01-01" max="@(DateTime.Now.ToString("yyyy-MM-dd"))">
                 </div>
             </div>
             <div class="form-group row">
                 <p class="col-sm-1 col-form-label" style="padding-top: 5px;">Data końcowa</p>
                 <div class="col-sm-11">
-                    <input type="date" name="endDate" style="width: 60px; min-width: 200px;" class="form-control" id="endDate" placeholder="Data końcowa">
+                    <input type="date" name="endDate" style="width: 60px; min-width: 200px;" class="form-control" id="endDate" placeholder="Data końcowa"
+                           value="@(DateTime.Now.ToString("yyyy-MM-dd"))"
+                           min="1900-01-01" max="@(DateTime.Now.ToString("yyyy-MM-dd"))">
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">Szukaj</button>
         </form>
         @if (ViewBag.startDate != null)
         {
-            <p class="btn-danger">data początkowa : @(ViewBag.startDate)</p>
+            <p class="alert alert-info">Data początkowa : @(ViewBag.startDate)</p>
         }
 
         @if (ViewBag.endDate != null)
         {
-            <p class="btn-danger">data końcowa @(ViewBag.endDate)</p>
+            <p class="alert alert-info">Data końcowa @(ViewBag.endDate)</p>
         }
 
         @if (Model?.Observations == null || Model.Observations.Count == 0)
@@ -118,7 +122,7 @@ else
                             {
                                 label: '@(value.Name)',
                                 title: '@(value.Name)',
-                                yUnits: 'kg',
+                                yUnits: '.',
                                 xValues: @(Json.Serialize(item.Value.Select(x => x.Date.Value.ToString("dd-MM-yyyy")))),
                                 yValues: @(Json.Serialize(item.Value.Select(x => x.Value)))
                             };
@@ -130,30 +134,34 @@ else
                 () => {
                     var ctx = document.getElementById('canvas').getContext('2d');
                     chartHanlder = new Chart(ctx, null);//ctx, config
-                    drawChart(data@(Model.ValueExaminations.First().Key.Replace("-", "_")))
+                    drawChart(data@(Model.ValueExaminations.Count == 0? "" : Model.ValueExaminations.First().Key.Replace("-", "_")))
                 }
             )
         </script>
     }
 }
 
-
-@Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
-
+@if (Model?.Data != null && Model.ValueExaminations.Count > 0)
+{
+    @Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })
+}
 
 <div class="timeline">
-    @foreach (var timelineObject in Model.TimelineObjects)
+    @if (Model != null)
     {
-        <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
-            <div class="content observationType-@(timelineObject.EventType)">
-                <p class="observation observation-date">@(timelineObject.Date.ToString("dd-MM-yyyy"))</p>
-                <h2 class="observation observation-question">@(timelineObject.Header)</h2>
-                <p class="observation observation-value">@(timelineObject.Description)</p>
-                <p class="observation observation-code">@(timelineObject.Code)</p>
-                <p class="observation observation-eventType">@(timelineObject.EventTypeName)</p>
+        @foreach (var timelineObject in Model.TimelineObjects)
+        {
+            <div class="timeline-container @( (timelineIterator++%2==0)?"left":"right")">
+                <div class="content observationType-@(timelineObject.EventType)">
+                    <p class="observation observation-date">@(timelineObject.Date.ToString("dd-MM-yyyy"))</p>
+                    <h2 class="observation observation-question">@(timelineObject.Header)</h2>
+                    <p class="observation observation-value">@(timelineObject.Description)</p>
+                    <p class="observation observation-code">@(timelineObject.Code)</p>
+                    <p class="observation observation-eventType">@(timelineObject.EventTypeName)</p>
+                </div>
             </div>
-        </div>
-
+        }
     }
+
 </div>
 @Html.ActionLink("Powrót do listy pajcentów", "Patient", "Home", new { }, new Dictionary<string, object> { { "class", "btn btn-warning" } })

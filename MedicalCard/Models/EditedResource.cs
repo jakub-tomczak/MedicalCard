@@ -12,6 +12,8 @@ namespace MedicalCard.Models
         public abstract G MapFromResource(T original);
         public abstract T MapToResource();
 
+        public abstract bool TryMergeWithResource(T original);
+
         public string Id { get => id; set => id = value; }
 
         private string id;

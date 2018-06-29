@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace MedicalCard.ViewModels
 {
+    /// <summary>
+    /// Class used to summarize patient's data.
+    /// </summary>
     public class PatientSummary
     {
         public List<MedicationStatement> Medicaments { get => medicaments; set => medicaments = value; }

@@ -18,11 +18,11 @@ namespace MedicalCard.Controllers
             try
             {
                 var patients = GetPatientsToDisplay();
-                return View(patients);
+                return View("Patient", patients);
             }
             catch (System.Net.WebException)
             {
-                return View();
+                return View("Patient");
             }
         }
 
@@ -38,11 +38,11 @@ namespace MedicalCard.Controllers
             };
             if (!string.IsNullOrEmpty(nextPage))
             {
-                bundle.NextLink = new Uri(string.Format(BundleLinkString, nextPage));
+                bundle.NextLink = new Uri(string.Format(BundleRequest, nextPage));
             }
             if (!string.IsNullOrEmpty(previousPage))
             {
-                bundle.PreviousLink = new Uri(string.Format(BundleLinkString, previousPage));
+                bundle.PreviousLink = new Uri(string.Format(BundleRequest, previousPage));
             }
             var nextPatients = GetPatientsToDisplay(bundle, goForward.Value);
             return View("Patient", nextPatients);
@@ -51,10 +51,9 @@ namespace MedicalCard.Controllers
         public IActionResult Search(string surname)
         {
             var resource = new ResourceGetter();
-            if (Misc.DataValidator.TryValidateString(surname, out string validated, 2, 30))
+            if (!Misc.DataValidator.TryValidateString(surname, out string validated, 2, 30))
             {
-                ViewBag.Error = "Szukane nazwisko musi mieć między 2 a 30 znaków.";
-                return Patient();
+                return ErrorIndex("Szukane nazwisko musi mieć między 2 a 30 znaków.");
             }
             else
             {
@@ -67,18 +66,21 @@ namespace MedicalCard.Controllers
 
         }
 
-        public IActionResult About()
+        public IActionResult ErrorIndex(string errorMessage)
         {
-            ViewData["Message"] = "Your application description page.";
-
-            return View();
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                ViewBag.errorMessage = errorMessage;
+            }
+            return Patient();
         }
-
-        public IActionResult Contact()
+        public IActionResult InfoIndex(string infoMessage)
         {
-            ViewData["Message"] = "Your contact page.";
-
-            return View();
+            if (!string.IsNullOrEmpty(infoMessage))
+            {
+                ViewBag.infoMessage = infoMessage;
+            }
+            return Patient();
         }
 
         public IActionResult Error()
@@ -86,19 +88,33 @@ namespace MedicalCard.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
+        public IActionResult Delete(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+                return RedirectToAction("Patient");
+
+            var resource = new ResourceGetter();
+            var person = resource.GetItem<Patient>(id);
+            if (person == null)
+                return RedirectToAction("Patient");
+            if (resource.RemoveItem<Patient>(person))
+                return InfoIndex($"Usunięto pacjenta {person.Name?.LastOrDefault()?.TypeName} o id {person.Id}");
+            return ErrorIndex($"Wystąpił błąd podczas usuwania osoby {person.Name?.LastOrDefault()?.TypeName} o id {person.Id}");
+        }
+
         private void PutBundleInfoToViewBag(Bundle bundle)
         {
             if (bundle == null)
                 return;
 
-            TryGetPageRequestId(bundle.PreviousLink?.AbsoluteUri, out string pLink);
-            TryGetPageRequestId(bundle.NextLink?.AbsoluteUri, out string nLink);
+            TryGetPageRequestParameters(bundle.NextLink?.AbsoluteUri, out string nextLink);
+            TryGetPageRequestParameters(bundle.PreviousLink?.AbsoluteUri, out string previousLink);
 
             ViewBag.bundle = new Dictionary<string, string>()
             {
                 { "id", bundle.Id },
-                { "previousPageLink", pLink },
-                { "nextPageLink", nLink }
+                { "previousPageLink", previousLink },
+                { "nextPageLink", nextLink }
             };
         }
 
@@ -143,8 +159,27 @@ namespace MedicalCard.Controllers
             return true;
         }
 
+        private bool TryGetPageRequestParameters(string input, out string output)
+        {
+            output = string.Empty;
+            if (string.IsNullOrEmpty(input))
+            {
+                return false;
+            }
+
+            var parametersPosition = input.IndexOf(ParametersIntdicator) + ParametersIntdicator.Length;
+            if (parametersPosition == parametersPosition - 1 || input.Length < parametersPosition + 50)
+            {
+                return false;
+            }
+            output = input.Substring(parametersPosition);
+            return true;
+        }
+
+        const string BundleRequest = @"http://localhost:8080/baseDstu3?{0}";
         const string BundleLinkString = @"http://localhost:8080/baseDstu3?_getpages={0}&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset";
         const string RequestIdIndicator = "_getpages=";
+        const string ParametersIntdicator = "baseDstu3?";
         const int PageIdLength = 36;
     }
 }
